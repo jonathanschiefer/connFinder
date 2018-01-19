@@ -1,5 +1,5 @@
 # connFinder
-Code for the connectivity estimation published under https://arxiv.org/abs/1708.02423
+Code for the connectivity estimation of neural populations published under https://arxiv.org/abs/1708.02423
 
 
 # Organization of the code
