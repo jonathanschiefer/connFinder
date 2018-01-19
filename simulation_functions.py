@@ -1,0 +1,90 @@
+
+import numpy as np
+from scipy.linalg import expm
+from scipy.linalg import solve_lyapunov
+from scipy.signal import fftconvolve
+from scipy.stats import gamma as gamma_func
+
+
+def orn_uhl(G, simDur, rho, p, tau, dt, sigma):
+    """Simulate an AR(1) process.
+
+    Discrete sample from an Ornstein-Uhlenbeck process defined by
+    d/dt v(t) = A_0 v(t)+ epsilon(t) where epsilon(t) ~ WN(0, C_0).
+
+    Input:
+    G -- array, shape (nodes, nodes), connectivity matrix
+    simDur -- int, duration of simulation
+    rho -- float, connection strength
+    tau -- float, time constant
+    dt -- float, temporal resolution of the sampled process
+    sigma -- float, standard deviation of the white noise
+    Returns:
+    data - array, shape (N, simDur * 1/dt), simulated data
+    """
+    N = np.shape(G)[0]
+    noDataPoints = int(simDur / dt)
+    C_0 = 1./tau**2 * np.eye(N)
+    A_0 = ((rho / np.sqrt(N * p)) * G - np.eye(N))/tau
+    sigma = solve_lyapunov(-A_0, C_0)
+    A = expm(A_0 * dt)
+    C = sigma
+
+    data = np.zeros((N, noDataPoints + 100))
+
+    noise = np.transpose(np.random.multivariate_normal(
+        np.zeros(N), C, noDataPoints + 100))
+    data[:, 0] = noise[:, 0]
+
+    for time in range(1, noDataPoints + 100):
+        data[:, time] = np.dot(A, data[:, time - 1]) + noise[:, time]
+
+    return data[:, 100:]
+
+
+def norm_data(data):
+    """Norm data by mean and std.
+
+    Input: arraylike structure, if 2D rows represent different
+    trials
+    Return: arraylike structure, normed data.
+    """
+    if len(np.shape(data)) == 2:
+        data -= np.mean(data, 1)[:, np.newaxis]
+        data /= np.std(data, 1)[:, np.newaxis]
+
+    if len(np.shape(data)) == 1:
+        data -= np.mean(data)
+        data /= np.std(data)
+    return data
+
+
+def calc_inst_cov(data, mode='time'):
+    """Calculate zero-lag covariance from data, return arraylike."""
+    data = norm_data(data)
+    N, T = np.shape(data)
+    if mode == 'time':
+        return (1. / (T - 1)) * np.dot(data, np.transpose(data))
+    if mode == 'fourier':
+        return (1. / (T - 1)) * np.dot(data, np.conjugate(np.transpose(data)))
+
+
+def hrf(time_array):
+    """Calculate canonical HRF for given timearray, return arraylike."""
+    fil = gamma_func.pdf(time_array, 6) - \
+        (1/6. * gamma_func.pdf(time_array, 16))
+    dt = time_array[1]
+    return fil / (np.linalg.norm(fil, ord=2)**2 * dt)
+
+
+def filter_data(data, dt):
+    """Filter data with canonical HRF for given temporal resolution, return arraylike."""
+    N, T = np.shape(data)
+    data = norm_data(data)
+    xs = np.arange(0, 30, dt)
+    fil = hrf(xs)
+    data_filtered = np.zeros(np.shape(data))
+    for i in range(N):
+        data_filtered[i, :] = fftconvolve(data[i, :], fil, mode='same')
+
+    return norm_data(data_filtered)
