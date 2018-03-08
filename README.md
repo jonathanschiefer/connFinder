@@ -1,5 +1,5 @@
 # connFinder
-Code for the connectivity estimation of neural populations published under https://arxiv.org/abs/1708.02423
+Code for the connectivity estimation of neural populations presented in the paper 'From Correlation to Causation: Estimating Effective Connectivity from Zero-Lag Covariances of Brain Signals' by Jonathan Schiefer, Alexander Niederbühl, Volker Pernice, Carolin Lennartz, Jürgen Hennig, Pierre LeVan and Stefan Rotter.
 
 
 # Organization of the code
