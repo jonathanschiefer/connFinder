@@ -43,16 +43,16 @@ def orn_uhl(G, simDur, rho, p, tau, dt, sigma):
     """
     N = np.shape(G)[0]
     noDataPoints = int(simDur / dt)
-    C_0 = 1./tau**2 * np.eye(N)
-    A_0 = ((rho / np.sqrt(N * p)) * G - np.eye(N))/tau
-    sigma = solve_lyapunov(-A_0, C_0)
+    C_0 = sigma/tau**2 * np.eye(N)
+    A_0 = ((rho / np.sqrt(N * p * (1 - p))) * G - np.eye(N))/tau
     A = expm(A_0 * dt)
-    C = sigma
+    sig = solve_lyapunov(-A_0, C_0 - (np.dot(A, np.dot(C_0, A.T))))
+    C = solve_lyapunov(-A_0, C_0)
 
     data = np.zeros((N, noDataPoints + 100))
 
     noise = np.transpose(np.random.multivariate_normal(
-        np.zeros(N), C, noDataPoints + 100))
+        np.zeros(N), sig, noDataPoints + 100))
     data[:, 0] = noise[:, 0]
 
     for time in range(1, noDataPoints + 100):
