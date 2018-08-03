@@ -43,7 +43,7 @@ def orn_uhl(G, simDur, rho, p, tau, dt, sigma):
     """
     N = np.shape(G)[0]
     noDataPoints = int(simDur / dt)
-    C_0 = sigma/tau**2 * np.eye(N)
+    C_0 = sigma**2/tau**2 * np.eye(N)
     A_0 = ((rho / np.sqrt(N * p * (1 - p))) * G - np.eye(N))/tau
     A = expm(A_0 * dt)
     sig = solve_lyapunov(-A_0, C_0 - (np.dot(A, np.dot(C_0, A.T))))
